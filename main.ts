@@ -10,8 +10,10 @@
 //   1. file size is within the 1 MiB cap;
 //   2. the file starts with the PNG signature;
 //   3. the IHDR chunk describes a 1024 x 1024 image;
-//   4. every chunk's CRC-32 matches the bytes it covers;
-//   5. the chunk chain ends with IEND and nothing follows it.
+//   4. the IHDR bit depth is 8 and the colour type is truecolour (2) or
+//      truecolour with alpha (6), so the pixels are plain RGB(A) bytes;
+//   5. every chunk's CRC-32 matches the bytes it covers;
+//   6. the chunk chain ends with IEND and nothing follows it.
 //
 // Node 22 standard library only, no network, no other files read.
 // Run locally with:  mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
@@ -59,6 +61,12 @@ function main(): void {
   const h = bytes.readUInt32BE(20);
   if (w !== WANT_W || h !== WANT_H) {
     fail(`must be ${WANT_W}x${WANT_H}, got ${w}x${h}`);
+  }
+  const bitDepth = bytes[24];
+  const colorType = bytes[25];
+  if (bitDepth !== 8) fail(`bit depth must be 8, got ${bitDepth}`);
+  if (colorType !== 2 && colorType !== 6) {
+    fail(`colour type must be 2 (RGB) or 6 (RGBA), got ${colorType}`);
   }
 
   // Walk the chunk chain, checking each CRC, until IEND.
